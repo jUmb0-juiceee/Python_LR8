@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Пользователь {{ user.name }} - Currency Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+
+        h1, h2, h3 {
+            color: #333;
+        }
+
+        .navigation {
+            margin: 30px 0;
+            padding: 10px;
+            background: #f4f4f4;
+            border-radius: 5px;
+        }
+
+        .navigation a {
+            margin-right: 15px;
+            text-decoration: none;
+            color: #0066cc;
+        }
+
+        .navigation a:hover {
+            text-decoration: underline;
+        }
+
+        .user-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin: 30px 0;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .user-id {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-bottom: 10px;
+        }
+
+        .user-name {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .user-stats {
+            display: flex;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            min-width: 150px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .currencies-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .currencies-table th, .currencies-table td {
+            border: 1px solid #ddd;
+            padding: 15px;
+            text-align: left;
+        }
+
+        .currencies-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .currencies-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .currencies-table tr:hover {
+            background-color: #f0f0f0;
+        }
+
+        .currency-code {
+            font-family: monospace;
+            font-weight: bold;
+            color: #0066cc;
+            font-size: 18px;
+        }
+
+        .currency-value {
+            font-weight: bold;
+            color: #2e7d32;
+            font-size: 18px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin: 30px 0;
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+
+        .back-link:hover {
+            background: #5a6fd8;
+        }
+
+        .no-subscriptions {
+            background: #fff3cd;
+            padding: 30px;
+            border-radius: 8px;
+            margin: 30px 0;
+            border-left: 5px solid #ffc107;
+            text-align: center;
+        }
+
+        .subscriptions-count {
+            font-size: 20px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .value-per-unit {
+            font-size: 0.9em;
+            color: #888;
+        }
+
+        .chart-section {
+            margin: 40px 0;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 5px solid #667eea;
+        }
+
+        .chart-controls {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+        .currency-select {
+            padding: 10px 15px;
+            border: 2px solid #667eea;
+            border-radius: 5px;
+            font-size: 16px;
+            min-width: 200px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-top: 20px;
+        }
+
+        .chart-title {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="navigation">
+        <a href="/">Главная</a>
+        <a href="/users">Пользователи</a>
+        <a href="/currencies">Валюты</a>
+        <a href="/author">Об авторе</a>
+    </div>
+
+    <a href="/users" class="back-link">← К списку пользователей</a>
+
+    <div class="user-header">
+        <div class="user-id">ID пользователя: {{ user.id }}</div>
+        <div class="user-name">{{ user.name }}</div>
+
+        <div class="user-stats">
+            <div class="stat-item">
+                <span class="stat-value">{{ subscriptions|length }}</span>
+                <span class="stat-label">Подписок</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value">{{ currencies_count }}</span>
+                <span class="stat-label">Всего валют</span>
+            </div>
+        </div>
+    </div>
+
+    {% if subscriptions %}
+        <h2>Подписки на валюты</h2>
+
+        <table class="currencies-table">
+            <thead>
+                <tr>
+                    <th>Код</th>
+                    <th>Название валюты</th>
+                    <th>Цена за 1 единицу, ₽</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for currency in subscriptions %}
+                <tr>
+                    <td>
+                        <span class="currency-code">{{ currency.char_code }}</span>
+                    </td>
+                    <td>{{ currency.name }}</td>
+                    <td>
+                        <span class="currency-value">{{ "%.4f"|format(currency.value_per_unit) }}</span>
+                        <div class="value-per-unit">за 1 {{ currency.char_code }}</div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <p><strong>Всего подписок:</strong> <span class="subscriptions-count">{{ subscriptions|length }}</span></p>
+
+        <!-- Секция с графиком -->
+        <div class="chart-section">
+            <h2 class="chart-title">Динамика курса валюты (3 месяца)</h2>
+
+            <div class="chart-controls">
+                <select id="currencySelect" class="currency-select">
+                    {% for currency in subscriptions %}
+                    <option value="{{ currency.char_code }}">{{ currency.char_code }} - {{ currency.name }}</option>
+                    {% endfor %}
+                </select>
+                <button onclick="loadChart()" class="btn">Показать график</button>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="currencyChart"></canvas>
+            </div>
+
+            <div id="chartLoading" class="loading" style="display: none;">
+                Загрузка данных...
+            </div>
+        </div>
+
+    {% else %}
+        <div class="no-subscriptions">
+            <h3>Нет подписок на валюты</h3>
+            <p>Этот пользователь еще не подписался ни на одну валюту.</p>
+            <p>
+                <a href="/currencies" class="btn">Посмотреть доступные валюты</a>
+            </p>
+        </div>
+    {% endif %}
+
+    <script>
+        let currencyChart = null;
+
+        function loadChart() {
+            const select = document.getElementById('currencySelect');
+            const currencyCode = select.value;
+
+            if (!currencyCode) {
+                alert('Пожалуйста, выберите валюту');
+                return;
+            }
+
+            const loadingDiv = document.getElementById('chartLoading');
+            loadingDiv.style.display = 'block';
+
+            // В реальном приложении здесь был бы AJAX запрос к серверу
+            // Для демонстрации используем тестовые данные
+
+            // Имитация задержки загрузки
+            setTimeout(() => {
+                // Тестовые данные для графика
+                const testData = generateTestData(currencyCode);
+                renderChart(currencyCode, testData);
+                loadingDiv.style.display = 'none';
+            }, 500);
+        }
+
+        function generateTestData(currencyCode) {
+            // Генерируем тестовые данные для 90 дней
+            const data = [];
+            const baseValue = currencyCode === 'USD' ? 90 :
+                             currencyCode === 'EUR' ? 98 :
+                             currencyCode === 'GBP' ? 115 : 50;
+
+            for (let i = 90; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                const dateStr = date.toISOString().split('T')[0];
+
+                // Имитация изменения курса
+                const change = (Math.random() - 0.5) * 2 * (i / 30);
+                const value = baseValue + change;
+
+                data.push({
+                    date: dateStr,
+                    value: parseFloat(value.toFixed(4))
+                });
+            }
+
+            return data;
+        }
+
+        function renderChart(currencyCode, data) {
+            const ctx = document.getElementById('currencyChart').getContext('2d');
+
+            // Уничтожаем предыдущий график, если есть
+            if (currencyChart) {
+                currencyChart.destroy();
+            }
+
+            // Подготавливаем данные для графика
+            const labels = data.map(item => {
+                const date = new Date(item.date);
+                return date.toLocaleDateString('ru-RU', {
+                    month: 'short',
+                    day: 'numeric'
+                });
+            });
+
+            const values = data.map(item => item.value);
+
+            // Создаем новый график
+            currencyChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: `Курс ${currencyCode} к RUB`,
+                        data: values,
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `Динамика курса ${currencyCode} за 3 месяца`,
+                            font: {
+                                size: 18
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return `${currencyCode}: ${context.parsed.y.toFixed(4)} ₽`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Дата'
+                            },
+                            ticks: {
+                                maxTicksLimit: 10
+                            }
+                        },
+                        y: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Курс, ₽'
+                            },
+                            beginAtZero: false
+                        }
+                    }
+                }
+            });
+        }
+
+        // Автоматически загружаем график для первой валюты при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            const select = document.getElementById('currencySelect');
+            if (select && select.options.length > 0) {
+                loadChart();
+            }
+        });
+    </script>
+
+    <a href="/" class="back-link">← Вернуться на главную</a>
+</body>
+</html>

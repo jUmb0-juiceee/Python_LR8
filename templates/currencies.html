@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Валюты - Currency Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+
+        h1, h2 {
+            color: #333;
+        }
+
+        .navigation {
+            margin: 30px 0;
+            padding: 10px;
+            background: #f4f4f4;
+            border-radius: 5px;
+        }
+
+        .navigation a {
+            margin-right: 15px;
+            text-decoration: none;
+            color: #0066cc;
+        }
+
+        .navigation a:hover {
+            text-decoration: underline;
+        }
+
+        .currencies-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .currencies-table th, .currencies-table td {
+            border: 1px solid #ddd;
+            padding: 15px;
+            text-align: left;
+        }
+
+        .currencies-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .currencies-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .currencies-table tr:hover {
+            background-color: #f0f0f0;
+        }
+
+        .currency-code {
+            font-family: monospace;
+            font-weight: bold;
+            color: #0066cc;
+            font-size: 18px;
+        }
+
+        .currency-value {
+            font-weight: bold;
+            color: #2e7d32;
+            font-size: 18px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .update-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 5px solid #667eea;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin: 30px 0;
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+
+        .back-link:hover {
+            background: #5a6fd8;
+        }
+
+        .nominal-info {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .value-per-unit {
+            font-size: 0.9em;
+            color: #888;
+        }
+
+        .currency-id {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .update-time {
+            font-weight: bold;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="navigation">
+        <a href="/">Главная</a>
+        <a href="/users">Пользователи</a>
+        <a href="/currencies" style="font-weight: bold; background: rgba(102, 126, 234, 0.3);">Валюты</a>
+        <a href="/author">Об авторе</a>
+    </div>
+
+    <h1>Курсы валют</h1>
+
+    <div class="update-section">
+        <p><strong>Курсы обновлены:</strong> <span class="update-time">{{ update_time }}</span></p>
+        <form action="/currencies" method="get">
+            <button type="submit" class="btn">🔄 Обновить курсы</button>
+        </form>
+        <p><em>Курсы загружаются с API Центробанка России в реальном времени</em></p>
+    </div>
+
+    {% if currencies %}
+        <table class="currencies-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Код</th>
+                    <th>Название</th>
+                    <th>Курс, ₽</th>
+                    <th>Номинал</th>
+                    <th>За 1 единицу, ₽</th>
+                    <th>Цифровой код</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for currency in currencies %}
+                <tr>
+                    <td class="currency-id">{{ currency.id }}</td>
+                    <td>
+                        <span class="currency-code">{{ currency.char_code }}</span>
+                    </td>
+                    <td>{{ currency.name }}</td>
+                    <td>
+                        <span class="currency-value">{{ "%.4f"|format(currency.value) }}</span>
+                    </td>
+                    <td>
+                        {{ currency.nominal }}
+                        <div class="nominal-info">единиц</div>
+                    </td>
+                    <td>
+                        {{ "%.4f"|format(currency.value_per_unit) }}
+                        <div class="value-per-unit">за 1 {{ currency.char_code }}</div>
+                    </td>
+                    <td>{{ currency.num_code }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <p><strong>Всего валют:</strong> {{ currencies|length }}</p>
+    {% else %}
+        <div style="background: #fff3cd; padding: 20px; border-radius: 8px; border-left: 5px solid #ffc107;">
+            <h3>Курсы временно недоступны</h3>
+            <p>Пожалуйста, попробуйте обновить страницу или повторить попытку позже.</p>
+            <a href="/currencies" class="btn">Повторить попытку</a>
+        </div>
+    {% endif %}
+
+    <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+        <h3>Примечание</h3>
+        <p>Курсы обновляются с API Центрального банка России. Номинал показывает,
+           за какое количество единиц валюты указан курс.</p>
+        <p><strong>Пример:</strong> если номинал = 100, а курс = 60.50, значит 100 единиц валюты стоят 60.50 рублей.</p>
+    </div>
+
+    <a href="/" class="back-link">← Вернуться на главную</a>
+</body>
+</html>
